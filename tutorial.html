@@ -9,6 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
+<meta name="author" content="Hana Sevcikova, University of Washington" />
 
 
 <title>Introduction to parallel computing with R</title>
@@ -116,6 +117,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Introduction to parallel computing with R</h1>
+<h4 class="author"><em>Hana Sevcikova, University of Washington</em></h4>
 
 </div>
 
@@ -158,7 +160,8 @@ $(document).ready(function () {
 <p>Please install the following packages:</p>
 <pre class="r"><code>install.packages(c(&quot;foreach&quot;, &quot;doParallel&quot;, &quot;doRNG&quot;, 
                    &quot;snowFT&quot;, &quot;extraDistr&quot;, &quot;ggplot2&quot;, 
-                   &quot;reshape2&quot;, &quot;wpp2017&quot;), dependencies = TRUE)</code></pre>
+                   &quot;reshape2&quot;, &quot;wpp2017&quot;), 
+                 dependencies = TRUE)</code></pre>
 </div>
 <div id="structure-of-statistical-simulations" class="section level1">
 <h1>Structure of Statistical Simulations</h1>
@@ -251,15 +254,15 @@ stopCluster(cl)</code></pre>
 <div id="evaluating-a-function-on-the-cluster" class="section level2">
 <h2>Evaluating a Function on the Cluster</h2>
 <ul>
-<li><p>Start a cluster that will be used for multiple tasks:</p>
+<li><p>Start a cluster that will be used to solve multiple tasks:</p>
 <pre class="r"><code>cl &lt;- makeCluster(P)</code></pre></li>
 <li><p>Let’s get each worker to generate as many normally distributed random numbers as its position in the list:</p>
 <pre class="r"><code>clusterApply(cl, 1:P, fun = rnorm)</code></pre>
 <p>The second argument is a sequence where each element gets passed to the corresponding worker, namely as the first argument to the function <code>fun</code>. In this example, the first worker got the number 1, second 2 etc. which is passed as the first argument to the <code>rnorm</code> function. Thus, the node <code>cl[[4]]</code> for example evaluates <code>rnorm(4, mean = 0, sd = 1)</code>.</p></li>
-<li><p>Pass additional argument to <code>fun</code>:</p>
+<li><p>Pass additional arguments to <code>fun</code>:</p>
 <pre class="r"><code>clusterApply(cl, 1:P, fun = rnorm, 
             mean = 10, sd = 2)</code></pre></li>
-<li><p>Evaluate a function more times than number of workers (say 20 times): Each function call generates a set of 100,000 random numbers from N(mean=5, sd=1) and returns the average of the set:</p>
+<li><p>Evaluate a function more times than the number of workers: Generate 20 sets of 100,000 random numbers from N(mean=5, sd=1) and return the average of each set:</p>
 <pre class="r"><code>res &lt;- clusterApply(cl, rep(100000, 20), 
         fun = function(x) mean(rnorm(x, mean = 5)))
 length(res)
@@ -374,7 +377,7 @@ length(res[[1]])
 # Create a matrix from the result
 resmat &lt;- do.call(rbind, res)
 dim(resmat)</code></pre>
-<p>Each row in <code>resmat</code> represents 100 realization of the AR(1) process with parameters corresponding to one row in the <code>ar1pars</code> data frame.</p></li>
+<p>Each row in <code>resmat</code> represents 100 realization of an AR(1) process with parameters corresponding to one row in the <code>ar1pars</code> data frame.</p></li>
 </ul>
 </div>
 </div>
@@ -507,7 +510,8 @@ stopCluster(cl3)    </code></pre></li>
 <div id="snowft" class="section level2">
 <h2>snowFT</h2>
 <p>(Ševčíková, Rossini)</p>
-<p>The snowFT package has a solution for the last two bullets above. The main idea is that there is one RNG stream per task instead of per worker. This makes the process independent of the node on which a task is evaluated, and thus is always reproducible.</p>
+<p>The <strong>snowFT</strong> package has a solution for the last two bullets above. In addition, it simplifies the interface to <strong>snow</strong>/<strong>parallel</strong>.</p>
+<p>The main idea to solve the reproducibility issue is that there is one RNG stream per task instead of one stream per worker. This makes the process independent of the node on which a task is evaluated, and thus is always reproducible.</p>
 <p><img src="data:image/png;base64,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AJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIDENAAAiWkAABLTAAAkpgEASEwDAJCYBgAgMQ0AQGIaAIBkAw9iBZvo/NOCAAAAAElFTkSuQmCC"></p>
 <p><strong>Caution:</strong> <em>Currently (as of July 2017), some of the functions in this section will not work in RStudio due to <a href="https://support.rstudio.com/hc/en-us/community/posts/115007977328-Problem-with-socketSelect-with-numerical-timeout">this bug in RStudio</a>. Please use an alternative R UI until it’s fixed.</em></p>
 <ul>
@@ -570,7 +574,7 @@ plot(tm, title="Dynamic Resizing with snowFT")
 dev.off()
 -->
 <ul>
-<li><p>For debugging purposes it allows to run your function sequentially while preserving reproducibility (set cluster size to 0):</p>
+<li><p><strong>snowFT</strong> allows to run your function sequentially while preserving reproducibility - can be useful for debugging purposes (set cluster size to 0):</p>
 <pre class="r"><code># runs sequentially
 unlist(performParallel(0, rep(5, 3), fun = rnorm, 
             seed = seed, ft_verbose = TRUE))
@@ -612,7 +616,7 @@ res</code></pre></li>
 <div id="parallel-backends" class="section level3">
 <h3>Parallel backends</h3>
 <ul>
-<li>To run loops in parallel, one needs to register a parallel backend which define the lower level parallel interface to be used.</li>
+<li>To run loops in parallel, one needs to register a parallel backend which defines the lower level parallel interface to be used.</li>
 <li>There are several parallel backends available:
 <ul>
 <li><a href="https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf"><code>doParallel</code></a>: uses the R core package <strong>parallel</strong> (<strong>snow</strong> functionality)</li>
@@ -746,7 +750,7 @@ run.foreach &lt;- function(nodes, trials = 100,
     stopCluster(cl)
     res[,]
 }</code></pre>
-<p>Note that even though all functions initialize the RNG with the same seed, only <code>run.snowFT</code> and <code>run.foreach</code> will give reproducible results when called for different number of nodes:</p>
+<p>Note that even though all functions initialize the RNG with the same seed, only <code>run.snowFT</code> and <code>run.foreach</code> will give reproducible results when called for a different number of nodes:</p>
 <pre class="r"><code>run.snowFT(3, 10)
 run.snowFT(4, 10)
 
@@ -755,7 +759,7 @@ run.foreach(10, 10)</code></pre>
 <p>but</p>
 <pre class="r"><code>run.parallel(3, 10)
 run.parallel(4, 10)</code></pre></li>
-<li><p>Function that loops over different number of nodes and the various methods and returns the run time:</p>
+<li><p>Function that loops over a different number of nodes and the various methods and returns the run time:</p>
 <pre class="r"><code>runtime &lt;- function(trials, 
         nodes = 1:detectCores(), seed = 1, 
         methods = c(&quot;parallel&quot;, &quot;parallelLB&quot;, 
@@ -805,7 +809,7 @@ show.runtime &lt;- function(t) {
                 breaks = sort(unique(tl$nodes)))
     print(g)
 }</code></pre></li>
-<li><p>Compute and plot runtime for different number of trials:</p>
+<li><p>Compute and plot runtime for a different number of trials:</p>
 <pre class="r"><code>t &lt;- runtime(50, 1:4)
 show.runtime(t)
 
@@ -851,18 +855,17 @@ plot(st)</code></pre>
 <div id="challenge" class="section level1">
 <h1>Challenge</h1>
 <p><strong>Projecting probabilistic migration</strong> (simplified version):</p>
-<p>Given current net migration for all countries of the world (from the wpp2017 package, see below), derive reproducible quantiles of net migration in 2100 using an AR(1) process with given parameters. The computation should run in parallel with a task corresponding to processing one country. Use a parallel method of your choice.</p>
+<p>Given current net migration for all countries of the world (from the <strong>wpp2017</strong> package, see below), derive reproducible quantiles of net migration in 2100 using an AR(1) process with given parameters. The computation should run in parallel with a task corresponding to processing one country. Use a parallel method of your choice.</p>
 <p>A sequential version could look as follows:</p>
 <pre class="r"><code># load data 
 options(stringsAsFactors = FALSE)
 data(migration, package = &quot;wpp2017&quot;)
 data(UNlocations, package = &quot;wpp2017&quot;)
 # remove records that are not countries
-mig &lt;- subset(mig, country_code %in% subset(
+mig &lt;- subset(migration, country_code %in% subset(
     UNlocations, location_type == 4)$country_code)
 # extract current migration (units are in thousand)
-mig &lt;- migration[, c(&quot;country_code&quot;, &quot;name&quot;, 
-                     &quot;2010-2015&quot;)]
+mig &lt;- mig[, c(&quot;country_code&quot;, &quot;name&quot;, &quot;2010-2015&quot;)]
 
 # AR(1) parameters
 pars &lt;- c(mu = 0, rho = 0.95, sigma = 0.05)
@@ -895,7 +898,7 @@ resdf &lt;- cbind(mig, new = res)</code></pre>
 <p><strong>Questions:</strong></p>
 <ol style="list-style-type: decimal">
 <li>Which country has the highest migration median forecast in 2100?</li>
-<li>Which country has the lowest 95%-tile in 2100?</li>
+<li>Which country has the lowest 5%-tile in 2100?</li>
 <li>Can you reproduce the same results when running on a cluster of different size?</li>
 <li>How does the run time differ when running on a cluster of different size?</li>
 <li>Explore when parallel processing gets inefficient as you decrease the number of trajectories <code>ntraj</code>.</li>

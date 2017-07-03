@@ -4,6 +4,7 @@ output:
   html_document:
     theme: readable
     toc: yes
+author: Hana Sevcikova, University of Washington
 ---
 
 ```{r setup, include=FALSE}
@@ -18,7 +19,8 @@ Please install the following packages:
 ```{r eval=FALSE}
 install.packages(c("foreach", "doParallel", "doRNG", 
                    "snowFT", "extraDistr", "ggplot2", 
-                   "reshape2", "wpp2017"), dependencies = TRUE)
+                   "reshape2", "wpp2017"), 
+                 dependencies = TRUE)
 ```
 
 
@@ -117,7 +119,7 @@ stopCluster(cl)
 
 ## Evaluating a Function on the Cluster
 
-* Start a cluster that will be used for multiple tasks:
+* Start a cluster that will be used to solve multiple tasks:
 
     ```{r eval=eval}
 cl <- makeCluster(P)
@@ -131,15 +133,15 @@ clusterApply(cl, 1:P, fun = rnorm)
 
     The second argument is a sequence where each element gets passed to the corresponding worker, namely as the first argument to the function `fun`. In this example, the first worker got the number 1, second 2 etc. which is passed as the first argument to the `rnorm` function. Thus, the node `cl[[4]]` for example evaluates `rnorm(4, mean = 0, sd = 1)`.
 
-* Pass additional argument to `fun`:
+* Pass additional arguments to `fun`:
 
     ```{r eval=eval}
 clusterApply(cl, 1:P, fun = rnorm, 
                 mean = 10, sd = 2)
 ```
 
-* Evaluate a function more times than number of workers (say 20 times): 
-    Each function call generates a set of 100,000 random numbers from N(mean=5, sd=1) and returns the average of the set:
+* Evaluate a function more times than the number of workers:
+    Generate 20 sets of 100,000 random numbers from N(mean=5, sd=1) and return the average of each set:
 
     ```{r eval=eval}
 res <- clusterApply(cl, rep(100000, 20), 
@@ -284,7 +286,7 @@ length(res[[1]])
 resmat <- do.call(rbind, res)
 dim(resmat)
 ```
-Each row in ``resmat`` represents 100 realization of the AR(1) process with parameters corresponding to one row in the ``ar1pars`` data frame.
+Each row in ``resmat`` represents 100 realization of an AR(1) process with parameters corresponding to one row in the ``ar1pars`` data frame.
 
 ## Higher Level Functions
 
@@ -476,7 +478,9 @@ stopCluster(cl3)
 
 (&#352;ev&#269;&#237;kov&#225;, Rossini)
 
-The snowFT package has a solution for the last two bullets above.  The main idea is that there is one RNG stream per task instead of per worker. This makes the process independent of the node on which a task is evaluated, and thus is always reproducible.
+The **snowFT** package has a solution for the last two bullets above.  In addition, it simplifies the interface to **snow**/**parallel**.
+
+The main idea to solve the reproducibility issue is that there is one RNG stream per task instead of one stream per worker. This makes the process independent of the node on which a task is evaluated, and thus is always reproducible.
     
 <img src="pics/RNGsnowFT.png"> 
 
@@ -567,7 +571,7 @@ plot(tm, title="Dynamic Resizing with snowFT")
 dev.off()
 -->
 
-* For debugging purposes it allows to run your function sequentially while preserving reproducibility (set cluster size to 0):
+* **snowFT** allows to run your function sequentially while preserving reproducibility - can be useful for debugging purposes (set cluster size to 0):
 
     ```{r eval=eval}
 # runs sequentially
@@ -623,7 +627,7 @@ res
 
 ### Parallel backends
 
-* To run loops in parallel, one needs to register a parallel backend which define the lower level parallel interface to be used.
+* To run loops in parallel, one needs to register a parallel backend which defines the lower level parallel interface to be used.
 * There are several parallel backends available:
     * [`doParallel`](https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf): uses the R core package **parallel** (**snow** functionality)
     * [`doMC`](https://cran.r-project.org/web/packages/doMC/vignettes/gettingstartedMC.pdf): **multicore** functionality of **parallel** (works on a single computer only; does not work on Windows)
@@ -785,7 +789,7 @@ run.foreach <- function(nodes, trials = 100,
 }
 ```
 
-    Note that even though all functions initialize the RNG with the same seed, only `run.snowFT` and `run.foreach` will give reproducible results when called for different number of nodes:
+    Note that even though all functions initialize the RNG with the same seed, only `run.snowFT` and `run.foreach` will give reproducible results when called for a  different number of nodes:
     
     ```{r eval=eval}
 run.snowFT(3, 10)
@@ -802,7 +806,7 @@ run.parallel(3, 10)
 run.parallel(4, 10)
 ```
 
-* Function that loops over different number of nodes and the various methods and returns the run time:
+* Function that loops over a different number of nodes and the various methods and returns the run time:
 
     ```{r eval=eval}
 runtime <- function(trials, 
@@ -861,7 +865,7 @@ show.runtime <- function(t) {
 ```
 
 
-* Compute and plot runtime for different number of trials:
+* Compute and plot runtime for a different number of trials:
 
     ```{r eval=eval}
 t <- runtime(50, 1:4)
@@ -906,7 +910,7 @@ plot(st)
 
 **Projecting probabilistic migration** (simplified version):
 
-Given current net migration for all countries of the world (from the wpp2017 package, see below), derive reproducible quantiles of net migration in 2100 using an AR(1) process with given parameters. The computation should run in parallel with a task corresponding to processing one country. Use a parallel method of your choice.
+Given current net migration for all countries of the world (from the **wpp2017** package, see below), derive reproducible quantiles of net migration in 2100 using an AR(1) process with given parameters. The computation should run in parallel with a task corresponding to processing one country. Use a parallel method of your choice.
 
 A sequential version could look as follows:
 
@@ -916,11 +920,10 @@ options(stringsAsFactors = FALSE)
 data(migration, package = "wpp2017")
 data(UNlocations, package = "wpp2017")
 # remove records that are not countries
-mig <- subset(mig, country_code %in% subset(
+mig <- subset(migration, country_code %in% subset(
     UNlocations, location_type == 4)$country_code)
 # extract current migration (units are in thousand)
-mig <- migration[, c("country_code", "name", 
-                     "2010-2015")]
+mig <- mig[, c("country_code", "name", "2010-2015")]
 
 # AR(1) parameters
 pars <- c(mu = 0, rho = 0.95, sigma = 0.05)
@@ -955,7 +958,7 @@ resdf <- cbind(mig, new = res)
 **Questions:**
 
 1. Which country has the highest migration median forecast in 2100?
-2. Which country has the lowest 95%-tile in 2100?
+2. Which country has the lowest 5%-tile in 2100?
 3. Can you reproduce the same results when running on a cluster of different size?
 4. How does the run time differ when running on a cluster of different size?
 5. Explore when parallel processing gets inefficient as you decrease the number of trajectories ``ntraj``.
